@@ -10,7 +10,7 @@
       "trigger": "minecraft:recipe_unlocked"
     }
   },
-  "requirements": [["has_computer", "has_the_recipe"]],
+  "requirements": [["has_the_recipe", "has_computer"]],
   "rewards": {"recipes": ["computercraft:monitor_advanced"]},
   "sends_telemetry_event": false
 }

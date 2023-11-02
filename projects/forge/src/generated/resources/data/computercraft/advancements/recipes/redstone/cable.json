@@ -11,7 +11,7 @@
     },
     "has_the_recipe": {"conditions": {"recipe": "computercraft:cable"}, "trigger": "minecraft:recipe_unlocked"}
   },
-  "requirements": [["has_computer", "has_modem", "has_the_recipe"]],
+  "requirements": [["has_the_recipe", "has_computer", "has_modem"]],
   "rewards": {"recipes": ["computercraft:cable"]},
   "sends_telemetry_event": false
 }

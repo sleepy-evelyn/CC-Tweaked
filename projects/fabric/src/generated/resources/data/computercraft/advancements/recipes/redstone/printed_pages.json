@@ -10,7 +10,7 @@
       "trigger": "minecraft:recipe_unlocked"
     }
   },
-  "requirements": [["has_printer", "has_the_recipe"]],
+  "requirements": [["has_the_recipe", "has_printer"]],
   "rewards": {"recipes": ["computercraft:printed_pages"]},
   "sends_telemetry_event": false
 }

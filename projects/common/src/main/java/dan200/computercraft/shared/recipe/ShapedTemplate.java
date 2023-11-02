@@ -4,16 +4,19 @@
 
 package dan200.computercraft.shared.recipe;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,61 +28,68 @@ import java.util.Set;
  * @param ingredients The ingredients in the recipe, see {@link ShapedRecipe#getIngredients()}
  */
 public record ShapedTemplate(int width, int height, NonNullList<Ingredient> ingredients) {
-    public static ShapedTemplate of(ShapedRecipe recipe) {
-        return new ShapedTemplate(recipe.getWidth(), recipe.getHeight(), recipe.getIngredients());
-    }
+    private static final Codec<List<String>> PATTERN_CODEC = ExtraCodecs.validate(Codec.STRING.listOf(), patterns -> {
+        if (patterns.size() > 3) return DataResult.error(() -> "Invalid pattern: too many rows, 3 is maximum");
+        if (patterns.isEmpty()) return DataResult.error(() -> "Invalid pattern: empty pattern not allowed");
 
-    public static ShapedTemplate fromJson(JsonObject json) {
-        Map<Character, Ingredient> key = new HashMap<>();
-        for (var entry : GsonHelper.getAsJsonObject(json, "key").entrySet()) {
-            if (entry.getKey().length() != 1) {
-                throw new JsonSyntaxException("Invalid key entry: '" + entry.getKey() + "' is an invalid symbol (must be 1 character only).");
-            }
-            if (" ".equals(entry.getKey())) {
-                throw new JsonSyntaxException("Invalid key entry: ' ' is a reserved symbol.");
-            }
+        var width = patterns.get(0).length();
 
-            key.put(entry.getKey().charAt(0), Ingredient.fromJson(entry.getValue()));
+        for (var p : patterns) {
+            if (p.length() > 3) return DataResult.error(() -> "Invalid pattern: too many columns, 3 is maximum");
+            if (width != p.length()) return DataResult.error(() -> "Invalid pattern: each row must be the same width");
         }
 
-        var patternList = GsonHelper.getAsJsonArray(json, "pattern");
-        if (patternList.size() == 0) {
-            throw new JsonSyntaxException("Invalid pattern: empty pattern not allowed");
-        }
+        return DataResult.success(patterns);
+    });
 
-        var pattern = new String[patternList.size()];
-        for (var x = 0; x < pattern.length; x++) {
-            var line = GsonHelper.convertToString(patternList.get(x), "pattern[" + x + "]");
-            if (x > 0 && pattern[0].length() != line.length()) {
-                throw new JsonSyntaxException("Invalid pattern: each row must  be the same width");
-            }
-            pattern[x] = line;
+    private static final Codec<String> SINGLE_CHARACTER_STRING_CODEC = ExtraCodecs.validate(Codec.STRING, string -> {
+        if (string.length() != 1) {
+            return DataResult.error(() -> "Invalid key entry: '" + string + "' is an invalid symbol (must be 1 character only).");
         }
+        if (" ".equals(string)) return DataResult.error(() -> "Invalid key entry: ' ' is a reserved symbol.");
 
-        var width = pattern[0].length();
-        var height = pattern.length;
+        return DataResult.success(string);
+    });
+
+    private static final MapCodec<Pair<Map<String, Ingredient>, List<String>>> RAW_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+        ExtraCodecs.strictUnboundedMap(SINGLE_CHARACTER_STRING_CODEC, Ingredient.CODEC_NONEMPTY).fieldOf("key").forGetter(Pair::getFirst),
+        PATTERN_CODEC.fieldOf("pattern").forGetter(Pair::getSecond)
+    ).apply(instance, Pair::of));
+
+    public static final MapCodec<ShapedTemplate> CODEC = RAW_CODEC.flatXmap(pair -> {
+        var key = pair.getFirst();
+        var pattern = pair.getSecond();
+
+        var width = pattern.get(0).length();
+        var height = pattern.size();
         var ingredients = NonNullList.withSize(width * height, Ingredient.EMPTY);
 
-        Set<Character> missingKeys = new HashSet<>(key.keySet());
+        Set<String> notSeen = new HashSet<>(key.keySet());
+        for (var y = 0; y < pattern.size(); ++y) {
+            var row = pattern.get(y);
 
-        var ingredientIdx = 0;
-        for (var line : pattern) {
-            for (var x = 0; x < line.length(); x++) {
-                var chr = line.charAt(x);
-                var ing = chr == ' ' ? Ingredient.EMPTY : key.get(chr);
-                if (ing == null) {
-                    throw new JsonSyntaxException("Pattern references symbol '" + chr + "' but it's not defined in the key");
+            for (var x = 0; x < row.length(); ++x) {
+                var lookup = row.substring(x, x + 1);
+                notSeen.remove(lookup);
+
+                var ingredient = lookup.equals(" ") ? Ingredient.EMPTY : key.get(lookup);
+                if (ingredient == null) {
+                    return DataResult.error(() -> "Pattern references symbol '" + lookup + "' but it's not defined in the key");
                 }
-                ingredients.set(ingredientIdx++, ing);
-                missingKeys.remove(chr);
+
+                ingredients.set(x + width * y, ingredient);
             }
         }
 
-        if (!missingKeys.isEmpty()) {
-            throw new JsonSyntaxException("Key defines symbols that aren't used in pattern: " + missingKeys);
+        if (!notSeen.isEmpty()) {
+            return DataResult.error(() -> "Key defines symbols that aren't used in pattern: " + notSeen);
         }
 
-        return new ShapedTemplate(width, height, ingredients);
+        return DataResult.success(new ShapedTemplate(width, height, ingredients));
+    }, recipe -> DataResult.error(() -> "Serialisation not supported"));
+
+    public static ShapedTemplate of(ShapedRecipe recipe) {
+        return new ShapedTemplate(recipe.getWidth(), recipe.getHeight(), recipe.getIngredients());
     }
 
     public static ShapedTemplate fromNetwork(FriendlyByteBuf buffer) {

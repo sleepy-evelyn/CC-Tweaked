@@ -4,9 +4,9 @@
 
 package dan200.computercraft.shared.recipe;
 
-import com.google.gson.JsonObject;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
@@ -21,12 +21,11 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
  * @param result     The result of the recipe.
  */
 public record ShapedRecipeSpec(RecipeProperties properties, ShapedTemplate template, ItemStack result) {
-    public static ShapedRecipeSpec fromJson(JsonObject json) {
-        var properties = RecipeProperties.fromJson(json);
-        var template = ShapedTemplate.fromJson(json);
-        var result = RecipeUtil.itemStackFromJson(GsonHelper.getAsJsonObject(json, "result"));
-        return new ShapedRecipeSpec(properties, template, result);
-    }
+    public static final MapCodec<ShapedRecipeSpec> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+        RecipeProperties.CODEC.forGetter(ShapedRecipeSpec::properties),
+        ShapedTemplate.CODEC.forGetter(ShapedRecipeSpec::template),
+        MoreCodecs.ITEM_STACK_WITH_NBT.fieldOf("result").forGetter(ShapedRecipeSpec::result)
+    ).apply(instance, ShapedRecipeSpec::new));
 
     public static ShapedRecipeSpec fromNetwork(FriendlyByteBuf buffer) {
         var properties = RecipeProperties.fromNetwork(buffer);

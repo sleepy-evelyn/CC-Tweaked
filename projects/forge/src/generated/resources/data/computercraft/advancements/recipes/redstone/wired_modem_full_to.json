@@ -10,7 +10,7 @@
       "trigger": "minecraft:recipe_unlocked"
     }
   },
-  "requirements": [["has_modem", "has_the_recipe"]],
+  "requirements": [["has_the_recipe", "has_modem"]],
   "rewards": {"recipes": ["computercraft:wired_modem_full_to"]},
   "sends_telemetry_event": false
 }

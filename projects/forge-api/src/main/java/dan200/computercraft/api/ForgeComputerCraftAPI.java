@@ -12,8 +12,8 @@ import dan200.computercraft.impl.ComputerCraftAPIForgeService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
+import net.neoforged.neoforge.common.capabilities.Capability;
+import net.neoforged.neoforge.common.util.LazyOptional;
 
 /**
  * The forge-specific entrypoint for ComputerCraft's API.

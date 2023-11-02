@@ -8,7 +8,7 @@ import dan200.computercraft.api.ComputerCraftAPI;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.GenericPeripheral;
 import dan200.computercraft.api.peripheral.PeripheralType;
-import net.minecraftforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 
 /**
  * Methods for interacting with blocks using Forge's energy storage system.

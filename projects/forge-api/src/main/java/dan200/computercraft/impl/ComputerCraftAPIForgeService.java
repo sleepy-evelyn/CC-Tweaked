@@ -11,9 +11,9 @@ import dan200.computercraft.api.peripheral.IPeripheralProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
+import net.neoforged.neoforge.common.capabilities.Capability;
+import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.ApiStatus;
 
 /**

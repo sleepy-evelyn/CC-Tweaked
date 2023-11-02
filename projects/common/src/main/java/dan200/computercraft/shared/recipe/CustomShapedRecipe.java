@@ -4,30 +4,29 @@
 
 package dan200.computercraft.shared.recipe;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import dan200.computercraft.shared.ModRegistry;
 import net.minecraft.Util;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.ShapedRecipe;
+
+import java.util.function.Function;
 
 /**
  * A custom version of {@link ShapedRecipe}, which can be converted to and from a {@link ShapedRecipeSpec}.
  * <p>
  * This recipe may both be used as a normal recipe (behaving mostly the same as {@link ShapedRecipe}, with
- * {@linkplain RecipeUtil#itemStackFromJson(JsonObject) support for putting nbt on the result}), or subclassed to
+ * {@linkplain MoreCodecs#ITEM_STACK_WITH_NBT support for putting nbt on the result}), or subclassed to
  * customise the crafting behaviour.
  */
 public class CustomShapedRecipe extends ShapedRecipe {
     private final ItemStack result;
 
-    public CustomShapedRecipe(ResourceLocation id, ShapedRecipeSpec recipe) {
+    public CustomShapedRecipe(ShapedRecipeSpec recipe) {
         super(
-            id,
             recipe.properties().group(), recipe.properties().category(),
             recipe.template().width(), recipe.template().height(), recipe.template().ingredients(),
             recipe.result()
@@ -44,23 +43,19 @@ public class CustomShapedRecipe extends ShapedRecipe {
         return ModRegistry.RecipeSerializers.SHAPED.get();
     }
 
-    public interface Factory<R> {
-        R create(ResourceLocation id, ShapedRecipeSpec recipe);
+    public static <T extends CustomShapedRecipe> RecipeSerializer<T> serialiser(Function<ShapedRecipeSpec, T> factory) {
+        return new Serialiser<>(r -> DataResult.success(factory.apply(r)));
     }
 
-    public static <T extends CustomShapedRecipe> RecipeSerializer<T> serialiser(CustomShapedRecipe.Factory<T> factory) {
-        return new Serialiser<>((id, r) -> DataResult.success(factory.create(id, r)));
-    }
-
-    public static <T extends CustomShapedRecipe> RecipeSerializer<T> validatingSerialiser(CustomShapedRecipe.Factory<DataResult<T>> factory) {
+    public static <T extends CustomShapedRecipe> RecipeSerializer<T> validatingSerialiser(Function<ShapedRecipeSpec, DataResult<T>> factory) {
         return new Serialiser<>(factory);
     }
 
     private record Serialiser<T extends CustomShapedRecipe>(
-        Factory<DataResult<T>> factory
+        Function<ShapedRecipeSpec, DataResult<T>> factory
     ) implements RecipeSerializer<T> {
-        private Serialiser(Factory<DataResult<T>> factory) {
-            this.factory = (id, r) -> factory.create(id, r).flatMap(x -> {
+        private Serialiser(Function<ShapedRecipeSpec, DataResult<T>> factory) {
+            this.factory = r -> factory.apply(r).flatMap(x -> {
                 if (x.getSerializer() != this) {
                     return DataResult.error(() -> "Expected serialiser to be " + this + ", but was " + x.getSerializer());
                 }
@@ -69,13 +64,13 @@ public class CustomShapedRecipe extends ShapedRecipe {
         }
 
         @Override
-        public T fromJson(ResourceLocation id, JsonObject json) {
-            return Util.getOrThrow(factory.create(id, ShapedRecipeSpec.fromJson(json)), JsonParseException::new);
+        public Codec<T> codec() {
+            return ShapedRecipeSpec.CODEC.codec().flatXmap(factory, x -> DataResult.success(x.toSpec()));
         }
 
         @Override
-        public T fromNetwork(ResourceLocation id, FriendlyByteBuf buffer) {
-            return Util.getOrThrow(factory.create(id, ShapedRecipeSpec.fromNetwork(buffer)), IllegalStateException::new);
+        public T fromNetwork(FriendlyByteBuf buffer) {
+            return Util.getOrThrow(factory.apply(ShapedRecipeSpec.fromNetwork(buffer)), IllegalStateException::new);
         }
 
         @Override

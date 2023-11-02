@@ -20,6 +20,8 @@ import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.LootTableProvider;
 import net.minecraft.data.models.BlockModelGenerators;
 import net.minecraft.data.models.ItemModelGenerators;
+import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
@@ -78,6 +80,16 @@ public class FabricDataGenerators implements DataGeneratorEntrypoint {
                     }
                 });
             }
+        }
+
+        @Override
+        public void recipes(Consumer<RecipeOutput> recipes) {
+            add(out -> new RecipeProvider(out) {
+                @Override
+                public void buildRecipes(RecipeOutput output) {
+                    recipes.accept(output);
+                }
+            });
         }
 
         @Override

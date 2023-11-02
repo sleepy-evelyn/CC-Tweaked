@@ -10,7 +10,7 @@
       "trigger": "minecraft:recipe_unlocked"
     }
   },
-  "requirements": [["has_components", "has_the_recipe"]],
+  "requirements": [["has_the_recipe", "has_components"]],
   "rewards": {"recipes": ["computercraft:turtle_advanced_upgrade"]},
   "sends_telemetry_event": false
 }

@@ -7,7 +7,7 @@
     },
     "has_the_recipe": {"conditions": {"recipe": "computercraft:speaker"}, "trigger": "minecraft:recipe_unlocked"}
   },
-  "requirements": [["has_computer", "has_the_recipe"]],
+  "requirements": [["has_the_recipe", "has_computer"]],
   "rewards": {"recipes": ["computercraft:speaker"]},
   "sends_telemetry_event": false
 }

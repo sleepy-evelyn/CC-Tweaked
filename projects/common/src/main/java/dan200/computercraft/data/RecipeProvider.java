@@ -5,7 +5,9 @@
 package dan200.computercraft.data;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.mojang.authlib.GameProfile;
+import com.mojang.serialization.JsonOps;
 import dan200.computercraft.api.ComputerCraftAPI;
 import dan200.computercraft.api.pocket.PocketUpgradeDataProvider;
 import dan200.computercraft.api.turtle.TurtleUpgradeDataProvider;
@@ -20,6 +22,8 @@ import dan200.computercraft.shared.platform.RegistryWrappers;
 import dan200.computercraft.shared.pocket.items.PocketComputerItem;
 import dan200.computercraft.shared.turtle.items.TurtleItem;
 import dan200.computercraft.shared.util.ColourUtils;
+import net.minecraft.Util;
+import net.minecraft.advancements.Criterion;
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 import net.minecraft.advancements.critereon.ItemPredicate;
 import net.minecraft.core.registries.Registries;
@@ -31,8 +35,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.crafting.CraftingRecipeCodecs;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
@@ -45,19 +49,21 @@ import java.util.function.Consumer;
 import static dan200.computercraft.api.ComputerCraftTags.Items.COMPUTER;
 import static dan200.computercraft.api.ComputerCraftTags.Items.WIRED_MODEM;
 
-class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
+class RecipeProvider {
     private final RecipeIngredients ingredients = PlatformHelper.get().getRecipeIngredients();
     private final TurtleUpgradeDataProvider turtleUpgrades;
     private final PocketUpgradeDataProvider pocketUpgrades;
 
-    RecipeProvider(PackOutput output, TurtleUpgradeDataProvider turtleUpgrades, PocketUpgradeDataProvider pocketUpgrades) {
-        super(output);
+    private RecipeProvider(TurtleUpgradeDataProvider turtleUpgrades, PocketUpgradeDataProvider pocketUpgrades) {
         this.turtleUpgrades = turtleUpgrades;
         this.pocketUpgrades = pocketUpgrades;
     }
 
-    @Override
-    public void buildRecipes(Consumer<FinishedRecipe> add) {
+    public static void recipes(RecipeOutput output, TurtleUpgradeDataProvider turtleUpgrades, PocketUpgradeDataProvider pocketUpgrades) {
+        new RecipeProvider(turtleUpgrades, pocketUpgrades).build(output);
+    }
+
+    private void build(RecipeOutput add) {
         basicRecipes(add);
         diskColours(add);
         pocketUpgrades(add);
@@ -77,7 +83,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
      *
      * @param add The callback to add recipes.
      */
-    private void diskColours(Consumer<FinishedRecipe> add) {
+    private void diskColours(RecipeOutput add) {
         for (var colour : Colour.VALUES) {
             ShapelessRecipeBuilder
                 .shapeless(RecipeCategory.REDSTONE, ModRegistry.Items.DISK.get())
@@ -103,7 +109,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
      *
      * @param add The callback to add recipes.
      */
-    private void turtleUpgrades(Consumer<FinishedRecipe> add) {
+    private void turtleUpgrades(RecipeOutput add) {
         for (var turtleItem : turtleItems()) {
             var base = turtleItem.create(-1, null, -1, null, null, 0, null);
 
@@ -138,7 +144,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
      *
      * @param add The callback to add recipes.
      */
-    private void pocketUpgrades(Consumer<FinishedRecipe> add) {
+    private void pocketUpgrades(RecipeOutput add) {
         for (var pocket : pocketComputerItems()) {
             var base = pocket.create(-1, null, -1, null);
             if (base.isEmpty()) continue;
@@ -166,7 +172,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
         }
     }
 
-    private void turtleOverlays(Consumer<FinishedRecipe> add) {
+    private void turtleOverlays(RecipeOutput add) {
         turtleOverlay(add, "turtle_trans_overlay", x -> x
             .unlockedBy("has_dye", inventoryChange(itemPredicate(ingredients.dye())))
             .requires(ColourUtils.getDyeTag(DyeColor.LIGHT_BLUE))
@@ -187,7 +193,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
         );
     }
 
-    private void turtleOverlay(Consumer<FinishedRecipe> add, String overlay, Consumer<ShapelessRecipeBuilder> build) {
+    private void turtleOverlay(RecipeOutput add, String overlay, Consumer<ShapelessRecipeBuilder> build) {
         for (var turtleItem : turtleItems()) {
             var base = turtleItem.create(-1, null, -1, null, null, 0, null);
 
@@ -210,7 +216,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
     }
 
 
-    private void basicRecipes(Consumer<FinishedRecipe> add) {
+    private void basicRecipes(RecipeOutput add) {
         ShapedRecipeBuilder
             .shaped(RecipeCategory.REDSTONE, ModRegistry.Items.CABLE.get(), 6)
             .pattern(" # ")
@@ -478,15 +484,15 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
         return DyeColor.byId(15 - colour.ordinal());
     }
 
-    private static InventoryChangeTrigger.TriggerInstance inventoryChange(TagKey<Item> stack) {
+    private static Criterion<InventoryChangeTrigger.TriggerInstance> inventoryChange(TagKey<Item> stack) {
         return InventoryChangeTrigger.TriggerInstance.hasItems(itemPredicate(stack));
     }
 
-    private static InventoryChangeTrigger.TriggerInstance inventoryChange(ItemLike... stack) {
+    private static Criterion<InventoryChangeTrigger.TriggerInstance> inventoryChange(ItemLike... stack) {
         return InventoryChangeTrigger.TriggerInstance.hasItems(stack);
     }
 
-    private static InventoryChangeTrigger.TriggerInstance inventoryChange(ItemPredicate... items) {
+    private static Criterion<InventoryChangeTrigger.TriggerInstance> inventoryChange(ItemPredicate... items) {
         return InventoryChangeTrigger.TriggerInstance.hasItems(items);
     }
 
@@ -499,11 +505,12 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
     }
 
     private static ItemPredicate itemPredicate(Ingredient ingredient) {
-        var json = ingredient.toJson();
+        var json = ingredient.toJson(false);
         if (!(json instanceof JsonObject object)) throw new IllegalStateException("Unknown ingredient " + json);
 
         if (object.has("item")) {
-            return itemPredicate(ShapedRecipe.itemFromJson(object));
+            var item = Util.getOrThrow(CraftingRecipeCodecs.ITEMSTACK_OBJECT_CODEC.parse(JsonOps.INSTANCE, object), JsonParseException::new);
+            return itemPredicate(item.getItem());
         } else if (object.has("tag")) {
             return itemPredicate(TagKey.create(Registries.ITEM, new ResourceLocation(GsonHelper.getAsString(object, "tag"))));
         } else {
@@ -523,7 +530,7 @@ class RecipeProvider extends net.minecraft.data.recipes.RecipeProvider {
         return json -> json.addProperty("family", family.getSerializedName());
     }
 
-    private static void addSpecial(Consumer<FinishedRecipe> add, SimpleCraftingRecipeSerializer<?> special) {
+    private static void addSpecial(RecipeOutput add, SimpleCraftingRecipeSerializer<?> special) {
         SpecialRecipeBuilder.special(special).save(add, RegistryWrappers.RECIPE_SERIALIZERS.getKey(special).toString());
     }
 }

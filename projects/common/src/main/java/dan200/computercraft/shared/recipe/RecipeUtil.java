@@ -4,17 +4,15 @@
 
 package dan200.computercraft.shared.recipe;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
-import com.mojang.serialization.JsonOps;
-import net.minecraft.Util;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.Recipe;
 
 public final class RecipeUtil {
     private RecipeUtil() {
@@ -31,43 +29,25 @@ public final class RecipeUtil {
         buffer.writeCollection(ingredients, (a, b) -> b.toNetwork(a));
     }
 
-    public static NonNullList<Ingredient> readShapelessIngredients(JsonObject json) {
-        NonNullList<Ingredient> ingredients = NonNullList.create();
-
-        var ingredientsList = GsonHelper.getAsJsonArray(json, "ingredients");
-        for (var i = 0; i < ingredientsList.size(); ++i) {
-            var ingredient = Ingredient.fromJson(ingredientsList.get(i));
-            if (!ingredient.isEmpty()) ingredients.add(ingredient);
-        }
-
-        if (ingredients.isEmpty()) throw new JsonParseException("No ingredients for shapeless recipe");
-        if (ingredients.size() > 9) {
-            throw new JsonParseException("Too many ingredients for shapeless recipe the max is 9");
-        }
-
-        return ingredients;
+    /**
+     * Calls {@link Recipe#getResultItem(RegistryAccess)} with a {@code null} {@link RegistryAccess}.
+     * <p>
+     * This should only be called on specific recipe types, where the accessor is known to be safe.
+     *
+     * @param recipe The recipe to get the result of.
+     * @return The recipe's result.
+     */
+    @SuppressWarnings("DataFlowIssue")
+    public static ItemStack getResultUnsafe(Recipe<?> recipe) {
+        return recipe.getResultItem(null);
     }
 
-    /**
-     * Extends {@link ShapedRecipe#itemStackFromJson(JsonObject)} with support for the {@code nbt} field.
-     *
-     * @param json The json to extract the item from.
-     * @return The parsed item stack.
-     */
-    public static ItemStack itemStackFromJson(JsonObject json) {
-        var item = ShapedRecipe.itemFromJson(json);
-        if (json.has("data")) throw new JsonParseException("Disallowed data tag found");
+    public static <A> MapCodec<A> unsafeUnwrapMapCodec(Codec<A> codec) {
+        return ((MapCodec.MapCodecCodec<A>) codec).codec();
+    }
 
-        var count = GsonHelper.getAsInt(json, "count", 1);
-        if (count < 1) throw new JsonSyntaxException("Invalid output count: " + count);
-
-        var stack = new ItemStack(item, count);
-
-        var nbt = json.get("nbt");
-        if (nbt != null) {
-            stack.setTag(Util.getOrThrow(MoreCodecs.TAG.parse(JsonOps.INSTANCE, nbt), JsonParseException::new));
-        }
-        return stack;
+    public static <A, O extends A> RecordCodecBuilder<O, A> unsafeUnwrapRecordCodec(Codec<A> codec) {
+        return unsafeUnwrapMapCodec(codec).forGetter(x -> x);
     }
 
 }

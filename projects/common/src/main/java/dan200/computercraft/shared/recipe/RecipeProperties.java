@@ -4,9 +4,11 @@
 
 package dan200.computercraft.shared.recipe;
 
-import com.google.gson.JsonObject;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 
@@ -17,14 +19,13 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
  * @param category The category the recipe appears in, see {@link CraftingRecipe#category()}.
  */
 public record RecipeProperties(String group, CraftingBookCategory category) {
+    public static final MapCodec<RecipeProperties> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+        ExtraCodecs.strictOptionalField(Codec.STRING, "group", "").forGetter(RecipeProperties::group),
+        CraftingBookCategory.CODEC.fieldOf("category").orElse(CraftingBookCategory.MISC).forGetter(RecipeProperties::category)
+    ).apply(instance, RecipeProperties::new));
+
     public static RecipeProperties of(CraftingRecipe recipe) {
         return new RecipeProperties(recipe.getGroup(), recipe.category());
-    }
-
-    public static RecipeProperties fromJson(JsonObject json) {
-        var group = GsonHelper.getAsString(json, "group", "");
-        var category = CraftingBookCategory.CODEC.byName(GsonHelper.getAsString(json, "category", null), CraftingBookCategory.MISC);
-        return new RecipeProperties(group, category);
     }
 
     public static RecipeProperties fromNetwork(FriendlyByteBuf buffer) {

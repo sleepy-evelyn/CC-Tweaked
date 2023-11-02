@@ -8,12 +8,12 @@ import cc.tweaked.gradle.CCTweakedExtension
 import cc.tweaked.gradle.CCTweakedPlugin
 import cc.tweaked.gradle.IdeaRunConfigurations
 import cc.tweaked.gradle.MinecraftConfigurations
+import gradle.kotlin.dsl.accessors._e1fa82e539e20c8b5addb9fa03b04f5c.minecraft
 
 plugins {
-    id("net.minecraftforge.gradle")
-    // We must apply java-convention after Forge, as we need the fg extension to be present.
     id("cc-tweaked.java-convention")
-    id("org.parchmentmc.librarian.forgegradle")
+    id("net.neoforged.gradle.userdev")
+    // id("org.parchmentmc.librarian.forgegradle")
 }
 
 plugins.apply(CCTweakedPlugin::class.java)
@@ -21,24 +21,20 @@ plugins.apply(CCTweakedPlugin::class.java)
 val mcVersion: String by extra
 
 minecraft {
-    val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
-    mappings("parchment", "${libs.findVersion("parchmentMc").get()}-${libs.findVersion("parchment").get()}-$mcVersion")
+    modIdentifier("computercraft")
+}
+// minecraft {
+//     val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+//     mappings("parchment", "${libs.findVersion("parchmentMc").get()}-${libs.findVersion("parchment").get()}-$mcVersion")
+// }
 
-    accessTransformer(project(":forge").file("src/main/resources/META-INF/accesstransformer.cfg"))
+dependencies {
+    val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+    implementation("net.neoforged:neoforge:${libs.findVersion("neoForge").get()}")
 }
 
 MinecraftConfigurations.setup(project)
 
 extensions.configure(CCTweakedExtension::class.java) {
     linters(minecraft = true, loader = "forge")
-}
-
-dependencies {
-    val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
-    "minecraft"("net.minecraftforge:forge:$mcVersion-${libs.findVersion("forge").get()}")
-}
-
-tasks.configureEach {
-    // genIntellijRuns isn't registered until much later, so we need this silly hijinks.
-    if (name == "genIntellijRuns") doLast { IdeaRunConfigurations(project).patch() }
 }

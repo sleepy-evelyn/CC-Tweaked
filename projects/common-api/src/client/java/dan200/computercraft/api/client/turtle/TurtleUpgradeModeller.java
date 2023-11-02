@@ -10,7 +10,6 @@ import dan200.computercraft.api.turtle.ITurtleAccess;
 import dan200.computercraft.api.turtle.ITurtleUpgrade;
 import dan200.computercraft.api.turtle.TurtleSide;
 import dan200.computercraft.api.turtle.TurtleUpgradeSerialiser;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -81,19 +80,6 @@ public interface TurtleUpgradeModeller<T extends ITurtleUpgrade> {
     @SuppressWarnings("unchecked")
     static <T extends ITurtleUpgrade> TurtleUpgradeModeller<T> flatItem() {
         return (TurtleUpgradeModeller<T>) TurtleUpgradeModellers.UPGRADE_ITEM;
-    }
-
-    /**
-     * Construct a {@link TurtleUpgradeModeller} which has a single model for the left and right side.
-     *
-     * @param left  The model to use on the left.
-     * @param right The model to use on the right.
-     * @param <T>   The type of the turtle upgrade.
-     * @return The constructed modeller.
-     */
-    static <T extends ITurtleUpgrade> TurtleUpgradeModeller<T> sided(ModelResourceLocation left, ModelResourceLocation right) {
-        // TODO(1.21.0): Remove this.
-        return sided((ResourceLocation) left, right);
     }
 
     /**

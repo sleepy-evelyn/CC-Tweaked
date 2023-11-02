@@ -21,17 +21,17 @@ import dan200.computercraft.shared.peripheral.generic.methods.FluidMethods;
 import dan200.computercraft.shared.peripheral.generic.methods.InventoryMethods;
 import dan200.computercraft.shared.platform.ForgeConfigFile;
 import dan200.computercraft.shared.platform.NetworkHandler;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.registries.NewRegistryEvent;
-import net.minecraftforge.registries.RegistryBuilder;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.common.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.registries.NewRegistryEvent;
+import net.neoforged.neoforge.registries.RegistryBuilder;
 
 @Mod(ComputerCraftAPI.MOD_ID)
 @Mod.EventBusSubscriber(modid = ComputerCraftAPI.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -70,13 +70,13 @@ public final class ComputerCraft {
         ComputerCraftAPI.registerGenericSource(new FluidMethods());
         ComputerCraftAPI.registerGenericSource(new EnergyMethods());
 
-        ForgeComputerCraftAPI.registerGenericCapability(ForgeCapabilities.ITEM_HANDLER);
-        ForgeComputerCraftAPI.registerGenericCapability(ForgeCapabilities.ENERGY);
-        ForgeComputerCraftAPI.registerGenericCapability(ForgeCapabilities.FLUID_HANDLER);
+        ForgeComputerCraftAPI.registerGenericCapability(Capabilities.ITEM_HANDLER);
+        ForgeComputerCraftAPI.registerGenericCapability(Capabilities.ENERGY);
+        ForgeComputerCraftAPI.registerGenericCapability(Capabilities.FLUID_HANDLER);
 
         ForgeDetailRegistries.FLUID_STACK.addProvider(FluidData::fill);
 
-        if (ModList.get().isLoaded(MoreRedIntegration.MOD_ID)) MoreRedIntegration.setup();
+        // if (ModList.get().isLoaded(MoreRedIntegration.MOD_ID)) MoreRedIntegration.setup();
     }
 
     @SubscribeEvent

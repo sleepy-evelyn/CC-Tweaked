@@ -15,10 +15,10 @@ import dan200.computercraft.api.peripheral.PeripheralType;
 import dan200.computercraft.shared.platform.ForgeContainerTransfer;
 import net.minecraft.world.Container;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.wrapper.InvWrapper;
+import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.common.capabilities.ICapabilityProvider;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.wrapper.InvWrapper;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -261,7 +261,7 @@ public class InventoryMethods implements GenericPeripheral {
         if (object instanceof BlockEntity blockEntity && blockEntity.isRemoved()) return null;
 
         if (object instanceof ICapabilityProvider provider) {
-            var cap = provider.getCapability(ForgeCapabilities.ITEM_HANDLER);
+            var cap = provider.getCapability(Capabilities.ITEM_HANDLER);
             if (cap.isPresent()) return cap.orElseThrow(NullPointerException::new);
         }
 

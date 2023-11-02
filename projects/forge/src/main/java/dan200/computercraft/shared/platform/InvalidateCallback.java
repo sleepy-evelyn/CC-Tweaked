@@ -5,8 +5,8 @@
 package dan200.computercraft.shared.platform;
 
 import dan200.computercraft.shared.peripheral.generic.ComponentLookup;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.NonNullConsumer;
+import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.common.util.NonNullConsumer;
 
 /**
  * A function which may be called when a capability (or some other object) has been invalidated.

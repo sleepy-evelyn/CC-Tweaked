@@ -5,6 +5,7 @@
 package dan200.computercraft.shared;
 
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.serialization.Codec;
 import dan200.computercraft.api.ComputerCraftAPI;
 import dan200.computercraft.api.detail.DetailProvider;
 import dan200.computercraft.api.detail.VanillaDetailRegistries;
@@ -35,7 +36,6 @@ import dan200.computercraft.shared.computer.items.CommandComputerItem;
 import dan200.computercraft.shared.computer.items.ComputerItem;
 import dan200.computercraft.shared.computer.recipe.ComputerUpgradeRecipe;
 import dan200.computercraft.shared.data.BlockNamedEntityLootCondition;
-import dan200.computercraft.shared.data.ConstantLootConditionSerializer;
 import dan200.computercraft.shared.data.HasComputerIdLootCondition;
 import dan200.computercraft.shared.data.PlayerCreativeLootCondition;
 import dan200.computercraft.shared.details.BlockDetails;
@@ -345,15 +345,16 @@ public final class ModRegistry {
         static final RegistrationHelper<LootItemConditionType> REGISTRY = PlatformHelper.get().createRegistrationHelper(Registries.LOOT_CONDITION_TYPE);
 
         public static final RegistryEntry<LootItemConditionType> BLOCK_NAMED = REGISTRY.register("block_named",
-            () -> ConstantLootConditionSerializer.type(BlockNamedEntityLootCondition.INSTANCE));
+            () -> new LootItemConditionType(Codec.unit(BlockNamedEntityLootCondition.INSTANCE)));
 
         public static final RegistryEntry<LootItemConditionType> PLAYER_CREATIVE = REGISTRY.register("player_creative",
-            () -> ConstantLootConditionSerializer.type(PlayerCreativeLootCondition.INSTANCE));
+            () -> new LootItemConditionType(Codec.unit(PlayerCreativeLootCondition.INSTANCE)));
 
         public static final RegistryEntry<LootItemConditionType> HAS_ID = REGISTRY.register("has_id",
-            () -> ConstantLootConditionSerializer.type(HasComputerIdLootCondition.INSTANCE));
+            () -> new LootItemConditionType(Codec.unit(HasComputerIdLootCondition.INSTANCE)));
     }
 
+    @SuppressWarnings("NullAway")
     public static class RecipeSerializers {
         static final RegistrationHelper<RecipeSerializer<?>> REGISTRY = PlatformHelper.get().createRegistrationHelper(Registries.RECIPE_SERIALIZER);
 
@@ -371,7 +372,7 @@ public final class ModRegistry {
         public static final RegistryEntry<SimpleCraftingRecipeSerializer<ClearColourRecipe>> DYEABLE_ITEM_CLEAR = simple("clear_colour", ClearColourRecipe::new);
         public static final RegistryEntry<RecipeSerializer<TurtleRecipe>> TURTLE = REGISTRY.register("turtle", () -> TurtleRecipe.validatingSerialiser(TurtleRecipe::of));
         public static final RegistryEntry<SimpleCraftingRecipeSerializer<TurtleUpgradeRecipe>> TURTLE_UPGRADE = simple("turtle_upgrade", TurtleUpgradeRecipe::new);
-        public static final RegistryEntry<RecipeSerializer<TurtleOverlayRecipe>> TURTLE_OVERLAY = REGISTRY.register("turtle_overlay", TurtleOverlayRecipe.Serializer::new);
+        public static final RegistryEntry<RecipeSerializer<TurtleOverlayRecipe>> TURTLE_OVERLAY = REGISTRY.register("turtle_overlay", TurtleOverlayRecipe.Serialiser::new);
         public static final RegistryEntry<SimpleCraftingRecipeSerializer<PocketComputerUpgradeRecipe>> POCKET_COMPUTER_UPGRADE = simple("pocket_computer_upgrade", PocketComputerUpgradeRecipe::new);
         public static final RegistryEntry<SimpleCraftingRecipeSerializer<PrintoutRecipe>> PRINTOUT = simple("printout", PrintoutRecipe::new);
         public static final RegistryEntry<SimpleCraftingRecipeSerializer<DiskRecipe>> DISK = simple("disk", DiskRecipe::new);

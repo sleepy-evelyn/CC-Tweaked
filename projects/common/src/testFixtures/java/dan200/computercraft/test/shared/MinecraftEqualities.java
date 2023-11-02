@@ -28,12 +28,12 @@ public class MinecraftEqualities {
     public static final StructuralEquality<Ingredient> ingredient = new StructuralEquality<>() {
         @Override
         public boolean equals(Ingredient left, Ingredient right) {
-            return left.toJson().equals(right.toJson());
+            return left.toJson(true).equals(right.toJson(true));
         }
 
         @Override
         public void describe(Description description, Ingredient object) {
-            description.appendValue(object.toJson());
+            description.appendValue(object.toJson(true));
         }
     };
 }

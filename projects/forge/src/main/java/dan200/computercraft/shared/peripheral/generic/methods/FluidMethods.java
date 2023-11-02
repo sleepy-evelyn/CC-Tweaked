@@ -13,10 +13,10 @@ import dan200.computercraft.api.peripheral.IComputerAccess;
 import dan200.computercraft.api.peripheral.PeripheralType;
 import dan200.computercraft.shared.platform.RegistryWrappers;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.common.capabilities.ICapabilityProvider;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -152,7 +152,7 @@ public class FluidMethods implements GenericPeripheral {
         if (object instanceof BlockEntity blockEntity && blockEntity.isRemoved()) return null;
 
         if (object instanceof ICapabilityProvider provider) {
-            var cap = provider.getCapability(ForgeCapabilities.FLUID_HANDLER);
+            var cap = provider.getCapability(Capabilities.FLUID_HANDLER);
             if (cap.isPresent()) return cap.orElseThrow(NullPointerException::new);
         }
 

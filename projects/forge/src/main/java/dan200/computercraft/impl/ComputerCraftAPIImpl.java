@@ -14,10 +14,10 @@ import dan200.computercraft.shared.details.FluidData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.neoforge.common.capabilities.Capability;
+import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.fml.ModList;
 
 import javax.annotation.Nullable;
 

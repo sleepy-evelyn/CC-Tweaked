@@ -13,10 +13,9 @@ plugins {
 }
 
 minecraft {
-    accessWideners(
-        "src/main/resources/computercraft.accesswidener",
-        "src/main/resources/computercraft-common.accesswidener",
-    )
+    accessTransformers {
+        file("src/main/resources/accesstransformer-common.cfg")
+    }
 }
 
 dependencies {

@@ -48,13 +48,6 @@ repositories {
 
     exclusiveContent {
         forRepositories(mainMaven)
-
-        // Include the ForgeGradle repository if present. This requires that ForgeGradle is already present, which we
-        // enforce in our Forge overlay.
-        val fg =
-            project.extensions.findByType(net.minecraftforge.gradle.userdev.DependencyManagementExtension::class.java)
-        if (fg != null) forRepositories(fg.repository)
-
         filter {
             includeGroup("cc.tweaked")
             includeModule("org.squiddev", "Cobalt")

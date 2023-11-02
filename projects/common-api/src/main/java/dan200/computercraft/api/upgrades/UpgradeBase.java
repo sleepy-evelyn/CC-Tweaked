@@ -100,7 +100,7 @@ public interface UpgradeBase {
      * The default check requires that any non-capability NBT is exactly the same as the
      * crafting item, but this may be relaxed for your upgrade.
      * <p>
-     * This is based on {@code net.minecraftforge.common.crafting.StrictNBTIngredient}'s check.
+     * This is based on {@code net.neoforged.common.crafting.StrictNBTIngredient}'s check.
      *
      * @param stack The stack to check. This is guaranteed to be non-empty and have the same item as
      *              {@link #getCraftingItem()}.

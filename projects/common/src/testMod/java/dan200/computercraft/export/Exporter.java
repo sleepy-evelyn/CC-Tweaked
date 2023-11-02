@@ -81,16 +81,16 @@ public class Exporter {
         // Now find all CC recipes.
         var level = Minecraft.getInstance().level;
         for (var recipe : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
-            var result = recipe.getResultItem(level.registryAccess());
+            var result = recipe.value().getResultItem(level.registryAccess());
             if (!RegistryWrappers.ITEMS.getKey(result.getItem()).getNamespace().equals(ComputerCraftAPI.MOD_ID)) {
                 continue;
             }
             if (result.hasTag()) {
-                TestHooks.LOG.warn("Skipping recipe {} as it has NBT", recipe.getId());
+                TestHooks.LOG.warn("Skipping recipe {} as it has NBT", recipe.id());
                 continue;
             }
 
-            if (recipe instanceof ShapedRecipe shaped) {
+            if (recipe.value() instanceof ShapedRecipe shaped) {
                 var converted = new JsonDump.Recipe(result);
 
                 for (var x = 0; x < shaped.getWidth(); x++) {
@@ -102,8 +102,8 @@ public class Exporter {
                     }
                 }
 
-                dump.recipes.put(recipe.getId().toString(), converted);
-            } else if (recipe instanceof ShapelessRecipe shapeless) {
+                dump.recipes.put(recipe.id().toString(), converted);
+            } else if (recipe.value() instanceof ShapelessRecipe shapeless) {
                 var converted = new JsonDump.Recipe(result);
 
                 var ingredients = shapeless.getIngredients();
@@ -111,7 +111,7 @@ public class Exporter {
                     converted.setInput(i, ingredients.get(i), items);
                 }
 
-                dump.recipes.put(recipe.getId().toString(), converted);
+                dump.recipes.put(recipe.id().toString(), converted);
             } else {
                 TestHooks.LOG.info("Don't know how to handle recipe {}", recipe);
             }

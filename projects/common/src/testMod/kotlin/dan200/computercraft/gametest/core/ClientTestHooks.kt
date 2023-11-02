@@ -171,7 +171,7 @@ object ClientTestHooks {
             minecraft.execute {
                 LOG.info("Stopping client.")
                 minecraft.level!!.disconnect()
-                minecraft.clearLevel()
+                // TODO: minecraft.clearLevel()
                 minecraft.stop()
 
                 exitProcess(

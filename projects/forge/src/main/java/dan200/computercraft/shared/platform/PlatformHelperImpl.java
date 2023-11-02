@@ -9,6 +9,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.serialization.JsonOps;
 import dan200.computercraft.api.ComputerCraftAPI;
 import dan200.computercraft.api.network.wired.WiredElement;
 import dan200.computercraft.api.peripheral.IPeripheral;
@@ -54,26 +55,24 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.common.ToolActions;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
-import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.event.ForgeEventFactory;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.items.wrapper.InvWrapper;
-import net.minecraftforge.items.wrapper.SidedInvWrapper;
-import net.minecraftforge.network.NetworkHooks;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistry;
-import net.minecraftforge.registries.RegistryManager;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.Event;
+import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.neoforge.common.Tags;
+import net.neoforged.neoforge.common.ToolActions;
+import net.neoforged.neoforge.common.capabilities.Capability;
+import net.neoforged.neoforge.common.conditions.ICondition;
+import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.neoforge.items.wrapper.InvWrapper;
+import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
+import net.neoforged.neoforge.network.NetworkHooks;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.ForgeRegistry;
+import net.neoforged.neoforge.registries.RegistryManager;
+import net.neoforged.neoforge.registries.RegistryObject;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -123,18 +122,20 @@ public class PlatformHelperImpl implements PlatformHelper {
 
     @Override
     public boolean shouldLoadResource(JsonObject object) {
-        return ICondition.shouldRegisterEntry(object);
+        return ICondition.conditionsMatched(JsonOps.INSTANCE, object);
     }
 
     @Override
     public void addRequiredModCondition(JsonObject object, String modId) {
-        var conditions = GsonHelper.getAsJsonArray(object, "forge:conditions", null);
+        // FIXME: Test this, though maybe move this
+        var conditions = GsonHelper.getAsJsonArray(object, "neoforge:conditions", null);
         if (conditions == null) {
             conditions = new JsonArray();
-            object.add("forge:conditions", conditions);
+            object.add("neoforge:conditions", conditions);
         }
 
-        conditions.add(CraftingHelper.serialize(new ModLoadedCondition(modId)));
+        conditions.add(ICondition.CODEC.encodeStart(JsonOps.INSTANCE, new ModLoadedCondition(modId)).getOrThrow(false, x -> {
+        }));
     }
 
     @Override
@@ -149,7 +150,7 @@ public class PlatformHelperImpl implements PlatformHelper {
 
     @Override
     public <C extends AbstractContainerMenu, T extends ContainerData> MenuType<C> createMenuType(Function<FriendlyByteBuf, T> reader, ContainerData.Factory<C, T> factory) {
-        return IForgeMenuType.create((id, player, data) -> factory.create(id, player, reader.apply(data)));
+        return IMenuTypeExtension.create((id, player, data) -> factory.create(id, player, reader.apply(data)));
     }
 
     @Override
@@ -216,7 +217,7 @@ public class PlatformHelperImpl implements PlatformHelper {
 
         var blockEntity = level.getBlockEntity(pos);
         if (blockEntity != null) {
-            var inventory = blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, side);
+            var inventory = blockEntity.getCapability(net.neoforged.neoforge.common.capabilities.Capabilities.ITEM_HANDLER, side);
             if (inventory.isPresent()) {
                 return new ForgeContainerTransfer(inventory.orElseThrow(NullPointerException::new));
             }
@@ -274,7 +275,7 @@ public class PlatformHelperImpl implements PlatformHelper {
 
     @Override
     public int getBurnTime(ItemStack stack) {
-        return ForgeHooks.getBurnTime(stack, null);
+        return CommonHooks.getBurnTime(stack, null);
     }
 
     @Override
@@ -289,20 +290,20 @@ public class PlatformHelperImpl implements PlatformHelper {
 
     @Override
     public List<ItemStack> getRecipeRemainingItems(ServerPlayer player, Recipe<CraftingContainer> recipe, CraftingContainer container) {
-        ForgeHooks.setCraftingPlayer(player);
+        CommonHooks.setCraftingPlayer(player);
         var result = recipe.getRemainingItems(container);
-        ForgeHooks.setCraftingPlayer(null);
+        CommonHooks.setCraftingPlayer(null);
         return result;
     }
 
     @Override
     public void onItemCrafted(ServerPlayer player, CraftingContainer container, ItemStack stack) {
-        ForgeEventFactory.firePlayerCraftingEvent(player, stack, container);
+        EventHooks.firePlayerCraftingEvent(player, stack, container);
     }
 
     @Override
     public boolean onNotifyNeighbour(Level level, BlockPos pos, BlockState block, Direction direction) {
-        return !ForgeEventFactory.onNeighborNotify(level, pos, block, EnumSet.of(direction), false).isCanceled();
+        return !EventHooks.onNeighborNotify(level, pos, block, EnumSet.of(direction), false).isCanceled();
     }
 
     @Override
@@ -322,14 +323,14 @@ public class PlatformHelperImpl implements PlatformHelper {
 
     @Override
     public InteractionResult canAttackEntity(ServerPlayer player, Entity entity) {
-        return ForgeHooks.onPlayerAttackTarget(player, entity) ? InteractionResult.PASS : InteractionResult.SUCCESS;
+        return CommonHooks.onPlayerAttackTarget(player, entity) ? InteractionResult.PASS : InteractionResult.SUCCESS;
     }
 
     @Override
     public boolean interactWithEntity(ServerPlayer player, Entity entity, Vec3 hitPos) {
         // Our behaviour is slightly different here - we call onInteractEntityAt before the interact methods, while
         // Forge does the call afterwards (on the server, not on the client).
-        var interactAt = ForgeHooks.onInteractEntityAt(player, entity, hitPos, InteractionHand.MAIN_HAND);
+        var interactAt = CommonHooks.onInteractEntityAt(player, entity, hitPos, InteractionHand.MAIN_HAND);
         if (interactAt == null) {
             interactAt = entity.interactAt(player, hitPos.subtract(entity.position()), InteractionHand.MAIN_HAND);
         }
@@ -341,7 +342,7 @@ public class PlatformHelperImpl implements PlatformHelper {
     public InteractionResult useOn(ServerPlayer player, ItemStack stack, BlockHitResult hit, Predicate<BlockState> canUseBlock) {
         var level = player.level();
         var pos = hit.getBlockPos();
-        var event = ForgeHooks.onRightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit);
+        var event = CommonHooks.onRightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit);
         if (event.isCanceled()) return event.getCancellationResult();
 
         var context = new UseOnContext(player, InteractionHand.MAIN_HAND, hit);

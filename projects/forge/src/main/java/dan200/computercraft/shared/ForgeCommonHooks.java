@@ -24,20 +24,20 @@ import dan200.computercraft.shared.util.SidedCapabilityProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.CommandBlockEntity;
-import net.minecraftforge.event.*;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.level.ChunkWatchEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.items.wrapper.InvWrapper;
-import net.minecraftforge.items.wrapper.SidedInvWrapper;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.*;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.level.ChunkWatchEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.items.wrapper.InvWrapper;
+import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
 
 import static dan200.computercraft.shared.Capabilities.CAPABILITY_PERIPHERAL;
-import static net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER;
+import static net.neoforged.neoforge.common.capabilities.Capabilities.ITEM_HANDLER;
 
 /**
  * Forge-specific dispatch for {@link CommonHooks}.

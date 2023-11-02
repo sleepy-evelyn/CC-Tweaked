@@ -5,7 +5,7 @@
 package dan200.computercraft.shared.details;
 
 import dan200.computercraft.shared.platform.RegistryWrappers;
-import net.minecraftforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.util.Map;
 

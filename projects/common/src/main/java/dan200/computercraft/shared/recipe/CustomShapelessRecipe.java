@@ -5,15 +5,16 @@
 package dan200.computercraft.shared.recipe;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import dan200.computercraft.shared.ModRegistry;
 import net.minecraft.Util;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
+
+import java.util.function.Function;
 
 /**
  * A custom version of {@link ShapelessRecipe}, which can be converted to and from a {@link ShapelessRecipeSpec}.
@@ -25,8 +26,8 @@ import net.minecraft.world.item.crafting.ShapelessRecipe;
 public class CustomShapelessRecipe extends ShapelessRecipe {
     private final ItemStack result;
 
-    public CustomShapelessRecipe(ResourceLocation id, ShapelessRecipeSpec recipe) {
-        super(id, recipe.properties().group(), recipe.properties().category(), recipe.result(), recipe.ingredients());
+    public CustomShapelessRecipe(ShapelessRecipeSpec recipe) {
+        super(recipe.properties().group(), recipe.properties().category(), recipe.result(), recipe.ingredients());
         this.result = recipe.result();
     }
 
@@ -39,23 +40,19 @@ public class CustomShapelessRecipe extends ShapelessRecipe {
         return ModRegistry.RecipeSerializers.SHAPELESS.get();
     }
 
-    public interface Factory<R> {
-        R create(ResourceLocation id, ShapelessRecipeSpec recipe);
+    public static <T extends CustomShapelessRecipe> RecipeSerializer<T> serialiser(Function<ShapelessRecipeSpec, T> factory) {
+        return new CustomShapelessRecipe.Serialiser<>(r -> DataResult.success(factory.apply(r)));
     }
 
-    public static <T extends CustomShapelessRecipe> RecipeSerializer<T> serialiser(Factory<T> factory) {
-        return new CustomShapelessRecipe.Serialiser<>((id, r) -> DataResult.success(factory.create(id, r)));
-    }
-
-    public static <T extends CustomShapelessRecipe> RecipeSerializer<T> validatingSerialiser(Factory<DataResult<T>> factory) {
+    public static <T extends CustomShapelessRecipe> RecipeSerializer<T> validatingSerialiser(Function<ShapelessRecipeSpec, DataResult<T>> factory) {
         return new CustomShapelessRecipe.Serialiser<>(factory);
     }
 
     private record Serialiser<T extends CustomShapelessRecipe>(
-        Factory<DataResult<T>> factory
+        Function<ShapelessRecipeSpec, DataResult<T>> factory
     ) implements RecipeSerializer<T> {
-        private Serialiser(Factory<DataResult<T>> factory) {
-            this.factory = (id, r) -> factory.create(id, r).flatMap(x -> {
+        private Serialiser(Function<ShapelessRecipeSpec, DataResult<T>> factory) {
+            this.factory = r -> factory.apply(r).flatMap(x -> {
                 if (x.getSerializer() != this) {
                     return DataResult.error(() -> "Expected serialiser to be " + this + ", but was " + x.getSerializer());
                 }
@@ -64,13 +61,13 @@ public class CustomShapelessRecipe extends ShapelessRecipe {
         }
 
         @Override
-        public T fromJson(ResourceLocation id, JsonObject json) {
-            return Util.getOrThrow(factory.create(id, ShapelessRecipeSpec.fromJson(json)), JsonParseException::new);
+        public Codec<T> codec() {
+            return ShapelessRecipeSpec.CODEC.codec().flatXmap(factory, x -> DataResult.success(x.toSpec()));
         }
 
         @Override
-        public T fromNetwork(ResourceLocation id, FriendlyByteBuf buffer) {
-            return Util.getOrThrow(factory.create(id, ShapelessRecipeSpec.fromNetwork(buffer)), IllegalStateException::new);
+        public T fromNetwork(FriendlyByteBuf buffer) {
+            return Util.getOrThrow(factory.apply(ShapelessRecipeSpec.fromNetwork(buffer)), IllegalStateException::new);
         }
 
         @Override

@@ -5,7 +5,12 @@
 package dan200.computercraft.data;
 
 import com.google.gson.JsonObject;
+import dan200.computercraft.annotations.ForgeOverride;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
@@ -15,21 +20,22 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Adapter for recipes which overrides the serializer and adds custom item NBT.
  */
-final class RecipeWrapper implements Consumer<FinishedRecipe> {
-    private final Consumer<FinishedRecipe> add;
+final class RecipeWrapper implements RecipeOutput {
+    private final RecipeOutput output;
     private final RecipeSerializer<?> serializer;
     private final List<Consumer<JsonObject>> extend = new ArrayList<>(0);
 
-    RecipeWrapper(Consumer<FinishedRecipe> add, RecipeSerializer<?> serializer) {
-        this.add = add;
+    RecipeWrapper(RecipeOutput output, RecipeSerializer<?> serializer) {
+        this.output = output;
         this.serializer = serializer;
     }
 
-    public static RecipeWrapper wrap(RecipeSerializer<?> serializer, Consumer<FinishedRecipe> original) {
+    public static RecipeWrapper wrap(RecipeSerializer<?> serializer, RecipeOutput original) {
         return new RecipeWrapper(original, serializer);
     }
 
@@ -56,11 +62,21 @@ final class RecipeWrapper implements Consumer<FinishedRecipe> {
 
     @Override
     public void accept(FinishedRecipe finishedRecipe) {
-        add.accept(new RecipeImpl(finishedRecipe, serializer, extend));
+        output.accept(new RecipeImpl(finishedRecipe, serializer, extend));
+    }
+
+    @Override
+    public Advancement.Builder advancement() {
+        return output.advancement();
+    }
+
+    @ForgeOverride
+    public HolderLookup.Provider provider() {
+        return HolderLookup.Provider.create(Stream.empty());
     }
 
     private record RecipeImpl(
-        FinishedRecipe recipe, RecipeSerializer<?> serializer, List<Consumer<JsonObject>> extend
+        FinishedRecipe recipe, RecipeSerializer<?> type, List<Consumer<JsonObject>> extend
     ) implements FinishedRecipe {
         @Override
         public void serializeRecipeData(JsonObject jsonObject) {
@@ -69,25 +85,14 @@ final class RecipeWrapper implements Consumer<FinishedRecipe> {
         }
 
         @Override
-        public ResourceLocation getId() {
-            return recipe.getId();
-        }
-
-        @Override
-        public RecipeSerializer<?> getType() {
-            return serializer;
+        public ResourceLocation id() {
+            return recipe.id();
         }
 
         @Nullable
         @Override
-        public JsonObject serializeAdvancement() {
-            return recipe.serializeAdvancement();
-        }
-
-        @Nullable
-        @Override
-        public ResourceLocation getAdvancementId() {
-            return recipe.getAdvancementId();
+        public AdvancementHolder advancement() {
+            return recipe.advancement();
         }
     }
 }

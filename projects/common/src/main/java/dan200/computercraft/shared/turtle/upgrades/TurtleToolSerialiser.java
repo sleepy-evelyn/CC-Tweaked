@@ -29,7 +29,7 @@ public final class TurtleToolSerialiser implements TurtleUpgradeSerialiser<Turtl
     public TurtleTool fromJson(ResourceLocation id, JsonObject object) {
         var adjective = GsonHelper.getAsString(object, "adjective", UpgradeBase.getDefaultAdjective(id));
         var toolItem = GsonHelper.getAsItem(object, "item");
-        var craftingItem = GsonHelper.getAsItem(object, "craftingItem", toolItem);
+        var craftingItem = GsonHelper.getAsItem(object, "craftingItem", toolItem).value();
         var damageMultiplier = GsonHelper.getAsFloat(object, "damageMultiplier", 3.0f);
         var allowEnchantments = GsonHelper.getAsBoolean(object, "allowEnchantments", false);
         var consumeDurability = TurtleToolDurability.CODEC.byName(GsonHelper.getAsString(object, "consumeDurability", null), TurtleToolDurability.NEVER);
