@@ -14,10 +14,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import static dan200.computercraft.api.filesystem.MountConstants.EPOCH;
+import static dan200.computercraft.api.filesystem.MountConstants.NO_SUCH_FILE;
 
 /**
  * A mount which reads zip/jar files.
@@ -94,8 +96,6 @@ public final class JarMount extends ArchiveMount<JarMount.FileEntry> implements 
             if (children == null && entry.isDirectory()) children = new HashMap<>(0);
         }
     }
-
-    private static final FileTime EPOCH = FileTime.from(Instant.EPOCH);
 
     private static FileTime orEpoch(@Nullable FileTime time) {
         return time == null ? EPOCH : time;

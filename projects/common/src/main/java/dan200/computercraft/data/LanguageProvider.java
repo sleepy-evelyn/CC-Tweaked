@@ -174,6 +174,7 @@ public final class LanguageProvider implements DataProvider {
         // Metrics
         add(Metrics.COMPUTER_TASKS, "Tasks");
         add(Metrics.SERVER_TASKS, "Server tasks");
+        add(Metrics.JAVA_ALLOCATION, "Java Allocations");
         add(Metrics.PERIPHERAL_OPS, "Peripheral calls");
         add(Metrics.FS_OPS, "Filesystem operations");
         add(Metrics.HTTP_REQUESTS, "HTTP requests");
@@ -213,7 +214,6 @@ public final class LanguageProvider implements DataProvider {
         addConfigEntry(ConfigSpec.floppySpaceLimit, "Floppy Disk space limit (bytes)");
         addConfigEntry(ConfigSpec.uploadMaxSize, "File upload size limit (bytes)");
         addConfigEntry(ConfigSpec.maximumFilesOpen, "Maximum files open per computer");
-        addConfigEntry(ConfigSpec.disableLua51Features, "Disable Lua 5.1 features");
         addConfigEntry(ConfigSpec.defaultComputerSettings, "Default Computer settings");
         addConfigEntry(ConfigSpec.logComputerErrors, "Log computer errors");
         addConfigEntry(ConfigSpec.commandRequireCreative, "Command computers require creative");

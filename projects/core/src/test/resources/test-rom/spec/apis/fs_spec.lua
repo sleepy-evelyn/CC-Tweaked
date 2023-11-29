@@ -7,6 +7,16 @@ describe("The fs library", function()
     local function test_file(path) return fs.combine(test_root, path) end
     before_each(function() fs.delete(test_root) end)
 
+    local function create_test_file(contents)
+        local path = test_file(("test_%04x.txt"):format(math.random(2 ^ 16)))
+
+        local handle = fs.open(path, "wb")
+        handle.write(contents)
+        handle.close()
+
+        return path
+    end
+
     describe("fs.complete", function()
         it("validates arguments", function()
             fs.complete("", "")
@@ -82,8 +92,8 @@ describe("The fs library", function()
         end)
 
         it("fails on non-existent nodes", function()
-            expect.error(fs.list, "rom/x"):eq("/rom/x: Not a directory")
-            expect.error(fs.list, "x"):eq("/x: Not a directory")
+            expect.error(fs.list, "rom/x"):eq("/rom/x: No such file")
+            expect.error(fs.list, "x"):eq("/x: No such file")
         end)
     end)
 
@@ -158,10 +168,67 @@ describe("The fs library", function()
     end)
 
     describe("fs.open", function()
+        local function read_tests(mode)
+            it("errors when closing twice", function()
+                local handle = fs.open("rom/startup.lua", "rb")
+                handle.close()
+                expect.error(handle.close):eq("attempt to use a closed file")
+            end)
+
+            it("reads multiple bytes", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, mode)
+                expect(handle.read(3)):eq("an ")
+                handle.close()
+            end)
+
+            it("errors reading a negative number of bytes", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, mode)
+                expect(handle.read(0)):eq("")
+                expect.error(handle.read, -1):str_match("^Cannot read a negative number of [a-z]+$")
+                handle.close()
+            end)
+
+            it("reads multiple bytes longer than the file", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, mode)
+                expect(handle.read(100)):eq("an example file")
+                handle.close()
+            end)
+
+            it("can read a line of text", function()
+                local file = create_test_file "some\nfile\r\ncontents\n\n"
+
+                local handle = fs.open(file, mode)
+                expect(handle.readLine()):eq("some")
+                expect(handle.readLine()):eq("file")
+                expect(handle.readLine()):eq("contents")
+                expect(handle.readLine()):eq("")
+                expect(handle.readLine()):eq(nil)
+                handle.close()
+            end)
+
+            it("can read a line of text with the trailing separator", function()
+                local file = create_test_file "some\nfile\r\ncontents\r!\n\n"
+
+                local handle = fs.open(file, mode)
+                expect(handle.readLine(true)):eq("some\n")
+                expect(handle.readLine(true)):eq("file\r\n")
+                expect(handle.readLine(true)):eq("contents\r!\n")
+                expect(handle.readLine(true)):eq("\n")
+                expect(handle.readLine(true)):eq(nil)
+                handle.close()
+            end)
+        end
+
         describe("reading", function()
             it("fails on directories", function()
-                expect { fs.open("rom", "r") }:same { nil, "/rom: No such file" }
-                expect { fs.open("", "r") }:same { nil, "/: No such file" }
+                expect { fs.open("rom", "r") }:same { nil, "/rom: Not a file" }
+                expect { fs.open("", "r") }:same { nil, "/: Not a file" }
             end)
 
             it("fails on non-existent nodes", function()
@@ -169,18 +236,48 @@ describe("The fs library", function()
                 expect { fs.open("x", "r") }:same { nil, "/x: No such file" }
             end)
 
-            it("errors when closing twice", function()
-                local handle = fs.open("rom/startup.lua", "r")
+            it("reads a single byte", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, "r")
+                expect(handle.read()):eq("a")
                 handle.close()
-                expect.error(handle.close):eq("attempt to use a closed file")
             end)
+
+            read_tests("r")
         end)
 
         describe("reading in binary mode", function()
-            it("errors when closing twice", function()
-                local handle = fs.open("rom/startup.lua", "rb")
+            it("reads a single byte", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, "rb")
+                expect(handle.read()):eq(97)
                 handle.close()
-                expect.error(handle.close):eq("attempt to use a closed file")
+            end)
+
+            read_tests("rb")
+        end)
+
+        describe("opening in r+ mode", function()
+            it("fails when reading non-files", function()
+                expect { fs.open("x", "r+") }:same { nil, "/x: No such file" }
+                expect { fs.open("", "r+") }:same { nil, "/: Not a file" }
+            end)
+
+            read_tests("r+")
+
+            it("can read and write to a file", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, "r+")
+                expect(handle.read(3)):eq("an ")
+
+                handle.write("exciting file")
+                expect(handle.seek("cur")):eq(16)
+
+                handle.seek("set", 0)
+                expect(handle.readAll()):eq("an exciting file")
             end)
         end)
 
@@ -207,6 +304,29 @@ describe("The fs library", function()
                 -- consistent though, and honestly doesn't matter too much.
                 expect(err):str_match("^/test%-files/con: .*")
             end)
+
+            it("writing numbers coerces them to a string", function()
+                local handle = fs.open(test_file "out.txt", "w")
+                handle.write(65)
+                handle.close()
+
+                local handle = fs.open(test_file "out.txt", "r")
+                expect(handle.readAll()):eq("65")
+                handle.close()
+            end)
+
+            it("can write lines", function()
+                local handle = fs.open(test_file "out.txt", "w")
+                handle.writeLine("First line!")
+                handle.writeLine("Second line.")
+                handle.close()
+
+                local handle = fs.open(test_file "out.txt", "r")
+                expect(handle.readLine()):eq("First line!")
+                expect(handle.readLine()):eq("Second line.")
+                expect(handle.readLine()):eq(nil)
+                handle.close()
+            end)
         end)
 
         describe("writing in binary mode", function()
@@ -214,6 +334,39 @@ describe("The fs library", function()
                 local handle = fs.open("test-files/out.txt", "wb")
                 handle.close()
                 expect.error(handle.close):eq("attempt to use a closed file")
+            end)
+
+            it("writing numbers treats them as bytes", function()
+                local handle = fs.open(test_file "out.txt", "wb")
+                handle.write(65)
+                handle.close()
+
+                local handle = fs.open(test_file "out.txt", "rb")
+                expect(handle.readAll()):eq("A")
+                handle.close()
+            end)
+        end)
+
+        describe("opening in w+ mode", function()
+            it("can write a file", function()
+                local handle = fs.open(test_file "out.txt", "w+")
+                handle.write("hello")
+                handle.seek("set", 0)
+                expect(handle.readAll()):eq("hello")
+
+                handle.write(", world!")
+                handle.seek("set", 0)
+                handle.write("H")
+
+                handle.seek("set", 0)
+                expect(handle.readAll()):eq("Hello, world!")
+            end)
+
+            it("truncates an existing file", function()
+                local file = create_test_file "an example file"
+
+                local handle = fs.open(file, "w+")
+                expect(handle.readAll()):eq("")
             end)
         end)
 

@@ -4,10 +4,7 @@
 
 package dan200.computercraft.core.apis;
 
-import dan200.computercraft.api.lua.IArguments;
-import dan200.computercraft.api.lua.ILuaAPI;
-import dan200.computercraft.api.lua.LuaException;
-import dan200.computercraft.api.lua.LuaFunction;
+import dan200.computercraft.api.lua.*;
 import dan200.computercraft.core.CoreConfig;
 import dan200.computercraft.core.apis.http.*;
 import dan200.computercraft.core.apis.http.request.HttpRequest;
@@ -18,7 +15,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 
-import java.util.Collections;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -74,7 +71,8 @@ public class HTTPAPI implements ILuaAPI {
 
     @LuaFunction
     public final Object[] request(IArguments args) throws LuaException {
-        String address, postString, requestMethod;
+        String address, requestMethod;
+        ByteBuffer postBody;
         Map<?, ?> headerTable;
         boolean binary, redirect;
         Optional<Double> timeoutArg;
@@ -82,8 +80,9 @@ public class HTTPAPI implements ILuaAPI {
         if (args.get(0) instanceof Map) {
             var options = args.getTable(0);
             address = getStringField(options, "url");
-            postString = optStringField(options, "body", null);
-            headerTable = optTableField(options, "headers", Collections.emptyMap());
+            var postString = optStringField(options, "body", null);
+            postBody = postString == null ? null : LuaValues.encode(postString);
+            headerTable = optTableField(options, "headers", Map.of());
             binary = optBooleanField(options, "binary", false);
             requestMethod = optStringField(options, "method", null);
             redirect = optBooleanField(options, "redirect", true);
@@ -91,8 +90,8 @@ public class HTTPAPI implements ILuaAPI {
         } else {
             // Get URL and post information
             address = args.getString(0);
-            postString = args.optString(1, null);
-            headerTable = args.optTable(2, Collections.emptyMap());
+            postBody = args.optBytes(1).orElse(null);
+            headerTable = args.optTable(2, Map.of());
             binary = args.optBoolean(3, false);
             requestMethod = null;
             redirect = true;
@@ -104,7 +103,7 @@ public class HTTPAPI implements ILuaAPI {
 
         HttpMethod httpMethod;
         if (requestMethod == null) {
-            httpMethod = postString == null ? HttpMethod.GET : HttpMethod.POST;
+            httpMethod = postBody == null ? HttpMethod.GET : HttpMethod.POST;
         } else {
             httpMethod = HttpMethod.valueOf(requestMethod.toUpperCase(Locale.ROOT));
             if (httpMethod == null || requestMethod.equalsIgnoreCase("CONNECT")) {
@@ -114,7 +113,7 @@ public class HTTPAPI implements ILuaAPI {
 
         try {
             var uri = HttpRequest.checkUri(address);
-            var request = new HttpRequest(requests, apiEnvironment, address, postString, headers, binary, redirect, timeout);
+            var request = new HttpRequest(requests, apiEnvironment, address, postBody, headers, binary, redirect, timeout);
 
             // Make the request
             if (!request.queue(r -> r.request(uri, httpMethod))) {
@@ -154,11 +153,11 @@ public class HTTPAPI implements ILuaAPI {
         if (args.get(0) instanceof Map) {
             var options = args.getTable(0);
             address = getStringField(options, "url");
-            headerTable = optTableField(options, "headers", Collections.emptyMap());
+            headerTable = optTableField(options, "headers", Map.of());
             timeoutArg = optRealField(options, "timeout");
         } else {
             address = args.getString(0);
-            headerTable = args.optTable(1, Collections.emptyMap());
+            headerTable = args.optTable(1, Map.of());
             timeoutArg = Optional.empty();
         }
 

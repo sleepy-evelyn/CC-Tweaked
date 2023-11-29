@@ -87,10 +87,9 @@ dependencies {
     //testModImplementation(testFixtures(project(":core")))
     //testModImplementation(testFixtures(project(":fabric")))
 
-    testImplementation(libs.byteBuddy)
-    testImplementation(libs.byteBuddyAgent)
     testImplementation(libs.bundles.test)
     testRuntimeOnly(libs.bundles.testRuntime)
+    testRuntimeOnly(libs.fabric.junit)
 
     testFixturesImplementation(testFixtures(project(":core")))
 }
@@ -169,7 +168,7 @@ loom {
             configureForGameTest(this)
 
             property("fabric-api.gametest")
-            property("fabric-api.gametest.report-file", project.buildDir.resolve("test-results/runGametest.xml").absolutePath)
+            property("fabric-api.gametest.report-file", layout.buildDirectory.dir("test-results/runGametest.xml").getAbsolutePath())
             runDir("run/gametest")
         }
     }

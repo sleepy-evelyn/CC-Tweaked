@@ -4,6 +4,7 @@
 
 package dan200.computercraft.test.core.filesystem;
 
+import dan200.computercraft.api.filesystem.MountConstants;
 import dan200.computercraft.api.filesystem.WritableMount;
 import dan200.computercraft.api.lua.LuaValues;
 import dan200.computercraft.test.core.ReplaceUnderscoresDisplayNameGenerator;
@@ -16,6 +17,7 @@ import org.opentest4j.TestAbortedException;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import static dan200.computercraft.api.filesystem.MountConstants.MINIMUM_FILE_SIZE;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -74,7 +76,7 @@ public interface WritableMountContract {
 
         assertTrue(mount.isDirectory("a/b/c"));
 
-        assertEquals(CAPACITY - 500 * 3, mount.getRemainingSpace());
+        assertEquals(CAPACITY - MINIMUM_FILE_SIZE * 3, mount.getRemainingSpace());
         assertEquals(access.computeRemainingSpace(), access.mount().getRemainingSpace(), "Free space is inconsistent");
     }
 
@@ -108,7 +110,31 @@ public interface WritableMountContract {
 
         Mounts.writeFile(mount, "hello.txt", "");
         assertEquals(0, mount.getSize("hello.txt"));
-        assertEquals(CAPACITY - 500, mount.getRemainingSpace());
+        assertEquals(CAPACITY - MINIMUM_FILE_SIZE, mount.getRemainingSpace());
+        assertEquals(access.computeRemainingSpace(), access.mount().getRemainingSpace(), "Free space is inconsistent");
+    }
+
+    @Test
+    default void Writing_uses_latest_file_size() throws IOException {
+        var access = createExisting(CAPACITY);
+        var mount = access.mount();
+
+        var handle = mount.openFile("file.txt", MountConstants.WRITE_OPTIONS);
+        handle.write(LuaValues.encode(LONG_CONTENTS));
+        assertEquals(CAPACITY - LONG_CONTENTS.length(), mount.getRemainingSpace());
+        assertEquals(access.computeRemainingSpace(), access.mount().getRemainingSpace(), "Free space is inconsistent");
+
+        var handle2 = mount.openFile("file.txt", MountConstants.WRITE_OPTIONS);
+
+        handle.write(LuaValues.encode("test"));
+        assertEquals(CAPACITY - LONG_CONTENTS.length() - 4, mount.getRemainingSpace());
+        assertEquals(access.computeRemainingSpace(), access.mount().getRemainingSpace(), "Free space is inconsistent");
+
+        handle2.close();
+        handle.close();
+
+        mount.delete("file.txt");
+        assertEquals(CAPACITY, mount.getRemainingSpace());
         assertEquals(access.computeRemainingSpace(), access.mount().getRemainingSpace(), "Free space is inconsistent");
     }
 
@@ -119,7 +145,7 @@ public interface WritableMountContract {
 
         Mounts.writeFile(mount, "a.txt", "example");
 
-        try (var handle = mount.openForAppend("a.txt")) {
+        try (var handle = mount.openFile("a.txt", MountConstants.APPEND_OPTIONS)) {
             assertEquals(7, handle.position());
             handle.write(LuaValues.encode(" text"));
             assertEquals(12, handle.position());

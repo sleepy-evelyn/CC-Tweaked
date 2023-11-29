@@ -1,3 +1,29 @@
+# New features in CC: Tweaked 1.109.0
+
+* Update to Lua 5.2
+  * `getfenv`/`setfenv` now only work on Lua functions.
+  * Add support for `goto`.
+  * Remove support for dumping and loading binary chunks.
+* File handles, HTTP requests and websocket messages now use raw bytes rather than converting to UTF-8.
+* Add `allow_repetitions` option to `textutils.serialiseJSON`.
+* Track memory allocated by computers.
+
+Several bug fixes:
+* Fix error when using position captures and backreferences in string patterns (e.g. `()(%1)`).
+* Fix formatting non-real numbers with `%d`.
+
+# New features in CC: Tweaked 1.108.4
+
+* Rewrite `@LuaFunction` generation to use `MethodHandle`s instead of ASM.
+* Refactor `ComputerThread` to provide a cleaner interface.
+* Remove `disable_lua51_features` config option.
+* Update several translations (Sammy).
+
+Several bug fixes:
+* Fix monitor peripheral becoming "detached" after breaking and replacing a monitor.
+* Fix signs being empty when placed.
+* Fix several inconsistencies with mount error messages.
+
 # New features in CC: Tweaked 1.108.3
 
 Several bug fixes:

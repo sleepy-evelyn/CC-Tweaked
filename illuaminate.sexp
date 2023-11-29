@@ -6,7 +6,7 @@
 
 (sources
   /doc/
-  /projects/forge/build/docs/luaJavadoc/
+  /projects/common/build/docs/luaJavadoc/
   /projects/core/src/main/resources/data/computercraft/lua/bios.lua
   /projects/core/src/main/resources/data/computercraft/lua/rom/
   /projects/core/src/test/resources/test-rom
@@ -36,7 +36,7 @@
 
   (library-path
     /doc/stub/
-    /projects/forge/build/docs/luaJavadoc/
+    /projects/common/build/docs/luaJavadoc/
 
     /projects/core/src/main/resources/data/computercraft/lua/rom/apis/
     /projects/core/src/main/resources/data/computercraft/lua/rom/apis/command/
@@ -77,7 +77,6 @@
     (globals
       :max
       _CC_DEFAULT_SETTINGS
-      _CC_DISABLE_LUA51_FEATURES
       _HOST
       ;; Ideally we'd pick these up from bios.lua, but illuaminate currently
       ;; isn't smart enough.
@@ -89,7 +88,7 @@
   (/doc/stub/
    /projects/core/src/main/resources/data/computercraft/lua/bios.lua
    /projects/core/src/main/resources/data/computercraft/lua/rom/apis/
-   /projects/forge/build/docs/luaJavadoc/)
+   /projects/common/build/docs/luaJavadoc/)
   (linters -var:unused-global)
   (lint (allow-toplevel-global true)))
 

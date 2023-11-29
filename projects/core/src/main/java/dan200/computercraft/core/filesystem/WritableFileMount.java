@@ -14,21 +14,19 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.NonReadableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Set;
+
+import static dan200.computercraft.api.filesystem.MountConstants.*;
+
 
 /**
  * A {@link WritableFileMount} implementation which provides read-write access to a directory.
  */
 public class WritableFileMount extends FileMount implements WritableMount {
     private static final Logger LOG = LoggerFactory.getLogger(WritableFileMount.class);
-
-    static final long MINIMUM_FILE_SIZE = 500;
-    private static final Set<OpenOption> WRITE_OPTIONS = Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-    private static final Set<OpenOption> APPEND_OPTIONS = Set.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
     protected final File rootFile;
     private final long capacity;
@@ -49,7 +47,7 @@ public class WritableFileMount extends FileMount implements WritableMount {
         try {
             Files.createDirectories(root);
         } catch (IOException e) {
-            throw new FileOperationException("Access denied");
+            throw new FileOperationException(ACCESS_DENIED);
         }
     }
 
@@ -78,7 +76,7 @@ public class WritableFileMount extends FileMount implements WritableMount {
         create();
         var file = resolveFile(path);
         if (file.exists()) {
-            if (!file.isDirectory()) throw new FileOperationException(path, "File exists");
+            if (!file.isDirectory()) throw new FileOperationException(path, FILE_EXISTS);
             return;
         }
 
@@ -90,19 +88,19 @@ public class WritableFileMount extends FileMount implements WritableMount {
         }
 
         if (getRemainingSpace() < dirsToCreate * MINIMUM_FILE_SIZE) {
-            throw new FileOperationException(path, "Out of space");
+            throw new FileOperationException(path, OUT_OF_SPACE);
         }
 
         if (file.mkdirs()) {
             usedSpace += dirsToCreate * MINIMUM_FILE_SIZE;
         } else {
-            throw new FileOperationException(path, "Access denied");
+            throw new FileOperationException(path, ACCESS_DENIED);
         }
     }
 
     @Override
     public void delete(String path) throws IOException {
-        if (path.isEmpty()) throw new FileOperationException(path, "Access denied");
+        if (path.isEmpty()) throw new FileOperationException(path, ACCESS_DENIED);
 
         if (created()) {
             var file = resolveFile(path);
@@ -125,7 +123,7 @@ public class WritableFileMount extends FileMount implements WritableMount {
         if (success) {
             usedSpace -= Math.max(MINIMUM_FILE_SIZE, fileSize);
         } else {
-            throw new IOException("Access denied");
+            throw new IOException(ACCESS_DENIED);
         }
     }
 
@@ -133,8 +131,8 @@ public class WritableFileMount extends FileMount implements WritableMount {
     public void rename(String source, String dest) throws FileOperationException {
         var sourceFile = resolvePath(source);
         var destFile = resolvePath(dest);
-        if (!Files.exists(sourceFile)) throw new FileOperationException(source, "No such file");
-        if (Files.exists(destFile)) throw new FileOperationException(dest, "File exists");
+        if (!Files.exists(sourceFile)) throw new FileOperationException(source, NO_SUCH_FILE);
+        if (Files.exists(destFile)) throw new FileOperationException(dest, FILE_EXISTS);
 
         if (destFile.startsWith(sourceFile)) {
             throw new FileOperationException(source, "Cannot move a directory inside itself");
@@ -158,47 +156,46 @@ public class WritableFileMount extends FileMount implements WritableMount {
     }
 
     @Override
-    public SeekableByteChannel openForWrite(String path) throws FileOperationException {
-        create();
-
-        var file = resolvePath(path);
-        var attributes = tryGetAttributes(path, file);
-        if (attributes == null) {
-            if (getRemainingSpace() < MINIMUM_FILE_SIZE) throw new FileOperationException(path, "Out of space");
-        } else if (attributes.isDirectory()) {
-            throw new FileOperationException(path, "Cannot write to directory");
-        } else {
-            usedSpace -= Math.max(attributes.size(), MINIMUM_FILE_SIZE);
-        }
-
-        usedSpace += MINIMUM_FILE_SIZE;
-
-        try {
-            return new CountingChannel(Files.newByteChannel(file, WRITE_OPTIONS), MINIMUM_FILE_SIZE, true);
-        } catch (IOException e) {
-            throw remapException(path, e);
-        }
+    @Deprecated(forRemoval = true)
+    public SeekableByteChannel openForWrite(String path) throws IOException {
+        return openFile(path, WRITE_OPTIONS);
     }
 
     @Override
-    public SeekableByteChannel openForAppend(String path) throws FileOperationException {
+    @Deprecated(forRemoval = true)
+    public SeekableByteChannel openForAppend(String path) throws IOException {
+        return openFile(path, APPEND_OPTIONS);
+    }
+
+    @Override
+    public SeekableByteChannel openFile(String path, Set<OpenOption> options) throws IOException {
+        var flags = FileFlags.of(options);
+
+        if (path.isEmpty()) {
+            throw new FileOperationException(path, flags.create() ? CANNOT_WRITE_TO_DIRECTORY : NOT_A_FILE);
+        }
+
         create();
 
         var file = resolvePath(path);
         var attributes = tryGetAttributes(path, file);
+        if (attributes != null && attributes.isDirectory()) {
+            throw new FileOperationException(path, flags.create() ? CANNOT_WRITE_TO_DIRECTORY : NOT_A_FILE);
+        }
+
         if (attributes == null) {
-            if (getRemainingSpace() < MINIMUM_FILE_SIZE) throw new FileOperationException(path, "Out of space");
-        } else if (attributes.isDirectory()) {
-            throw new FileOperationException(path, "Cannot write to directory");
+            if (!flags.create()) throw new FileOperationException(path, NO_SUCH_FILE);
+
+            if (getRemainingSpace() < MINIMUM_FILE_SIZE) throw new FileOperationException(path, OUT_OF_SPACE);
+            usedSpace += MINIMUM_FILE_SIZE;
+        } else if (flags.truncate()) {
+            usedSpace -= Math.max(attributes.size(), MINIMUM_FILE_SIZE);
+            usedSpace += MINIMUM_FILE_SIZE;
         }
 
         // Allowing seeking when appending is not recommended, so we use a separate channel.
         try {
-            return new CountingChannel(
-                Files.newByteChannel(file, APPEND_OPTIONS),
-                Math.max(MINIMUM_FILE_SIZE - (attributes == null ? 0 : attributes.size()), 0),
-                false
-            );
+            return new CountingChannel(Files.newByteChannel(file, options));
         } catch (IOException e) {
             throw remapException(path, e);
         }
@@ -206,31 +203,31 @@ public class WritableFileMount extends FileMount implements WritableMount {
 
     private class CountingChannel implements SeekableByteChannel {
         private final SeekableByteChannel channel;
-        private long ignoredBytesLeft;
-        private final boolean canSeek;
 
-        CountingChannel(SeekableByteChannel channel, long bytesToIgnore, boolean canSeek) {
+        CountingChannel(SeekableByteChannel channel) {
             this.channel = channel;
-            ignoredBytesLeft = bytesToIgnore;
-            this.canSeek = canSeek;
         }
 
         @Override
         public int write(ByteBuffer b) throws IOException {
-            count(b.remaining());
-            return channel.write(b);
-        }
+            var toWrite = b.remaining();
 
-        void count(long n) throws IOException {
-            ignoredBytesLeft -= n;
-            if (ignoredBytesLeft < 0) {
-                var newBytes = -ignoredBytesLeft;
-                ignoredBytesLeft = 0;
-
-                var bytesLeft = capacity - usedSpace;
-                if (newBytes > bytesLeft) throw new IOException("Out of space");
-                usedSpace += newBytes;
+            // If growing the file, make sure we have space for it.
+            var newPosition = Math.addExact(channel.position(), toWrite);
+            var newBytes = newPosition - Math.max(MINIMUM_FILE_SIZE, channel.size());
+            if (newBytes > 0) {
+                var newUsedSpace = Math.addExact(usedSpace, newBytes);
+                if (newUsedSpace > capacity) throw new IOException(OUT_OF_SPACE);
+                usedSpace = newUsedSpace;
             }
+
+            var written = channel.write(b);
+
+            // Some safety checks to check our file size accounting is reasonable.
+            if (written != toWrite) throw new IllegalStateException("Not all bytes were written");
+            assert channel.position() == newPosition : "Position is consistent";
+
+            return written;
         }
 
         @Override
@@ -246,17 +243,7 @@ public class WritableFileMount extends FileMount implements WritableMount {
         @Override
         public SeekableByteChannel position(long newPosition) throws IOException {
             if (!isOpen()) throw new ClosedChannelException();
-            if (!canSeek) throw new UnsupportedOperationException("File does not support seeking");
-            if (newPosition < 0) {
-                throw new IllegalArgumentException("Cannot seek before the beginning of the stream");
-            }
-
-            var delta = newPosition - channel.position();
-            if (delta < 0) {
-                ignoredBytesLeft -= delta;
-            } else {
-                count(delta);
-            }
+            if (newPosition < 0) throw new IllegalArgumentException("Cannot seek before the beginning of the stream");
 
             return channel.position(newPosition);
         }
@@ -267,9 +254,8 @@ public class WritableFileMount extends FileMount implements WritableMount {
         }
 
         @Override
-        public int read(ByteBuffer dst) throws ClosedChannelException {
-            if (!channel.isOpen()) throw new ClosedChannelException();
-            throw new NonReadableChannelException();
+        public int read(ByteBuffer dst) throws IOException {
+            return channel.read(dst);
         }
 
         @Override

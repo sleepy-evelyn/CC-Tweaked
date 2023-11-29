@@ -19,8 +19,9 @@ parchmentMc = "1.20.1"
 asm = "9.5"
 autoService = "1.1.1"
 checkerFramework = "3.32.0"
-cobalt = "0.7.3"
-cobalt-next = "0.7.4" # Not a real version, used to constrain the version we accept.
+cobalt = "0.8.0"
+cobalt-next = "0.8.1" # Not a real version, used to constrain the version we accept.
+commonsCli = "1.3.1"
 fastutil = "8.5.9"
 guava = "31.1-jre"
 jetbrainsAnnotations = "24.0.1"
@@ -45,13 +46,12 @@ rubidium = "0.6.1"
 sodium = "mc1.20-0.4.10"
 
 # Testing
-byteBuddy = "1.14.7"
 hamcrest = "2.2"
 jqwik = "1.7.4"
 junit = "5.10.0"
 
 # Build tools
-cctJavadoc = "1.8.0"
+cctJavadoc = "1.8.2"
 checkstyle = "10.12.3"
 curseForgeGradle = "1.0.14"
 errorProne-core = "2.21.1"
@@ -62,14 +62,15 @@ githubRelease = "2.4.1"
 ideaExt = "1.1.7"
 illuaminate = "0.1.0-44-g9ee0055"
 librarian = "1.+"
+lwjgl = "3.3.1"
 minotaur = "2.+"
 mixinGradle = "0.7.+"
 nullAway = "0.9.9"
 spotless = "6.21.0"
 taskTree = "2.1.1"
+teavm = "0.10.0-SQUID.2"
 vanillaGradle = "0.2.1-SNAPSHOT"
 vineflower = "1.11.0"
-teavm = "0.9.0-SQUID.1"
 
 [libraries]
 # Normal dependencies
@@ -77,7 +78,8 @@ asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 autoService = { module = "com.google.auto.service:auto-service", version.ref = "autoService" }
 checkerFramework = { module = "org.checkerframework:checker-qual", version.ref = "checkerFramework" }
-cobalt = { module = "org.squiddev:Cobalt", version.ref = "cobalt" }
+cobalt = { module = "cc.tweaked:cobalt", version.ref = "cobalt" }
+commonsCli = { module = "commons-cli:commons-cli", version.ref = "commonsCli" }
 fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "fastutil" }
 forgeSpi = { module = "net.minecraftforge:forgespi", version.ref = "forgeSpi" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -97,6 +99,7 @@ slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 # Minecraft mods
 fabric-api = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
+fabric-junit = { module = "net.fabricmc:fabric-loader-junit", version.ref = "fabric-loader" }
 fabricPermissions = { module = "me.lucko:fabric-permissions-api", version.ref = "fabricPermissions" }
 emi = { module = "dev.emi:emi-xplat-mojmap", version.ref = "emi" }
 iris = { module = "maven.modrinth:iris", version.ref = "iris" }
@@ -114,8 +117,6 @@ rubidium = { module = "maven.modrinth:rubidium", version.ref = "rubidium" }
 sodium = { module = "maven.modrinth:sodium", version.ref = "sodium" }
 
 # Testing
-byteBuddyAgent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "byteBuddy" }
-byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byteBuddy" }
 hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 jqwik-api = { module = "net.jqwik:jqwik-api", version.ref = "jqwik" }
 jqwik-engine = { module = "net.jqwik:jqwik-engine", version.ref = "jqwik" }
@@ -123,6 +124,12 @@ junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.re
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+# LWJGL
+lwjgl-bom = { module = "org.lwjgl:lwjgl-bom", version.ref = "lwjgl" }
+lwjgl-core = { module = "org.lwjgl:lwjgl" }
+lwjgl-opengl = { module = "org.lwjgl:lwjgl-opengl" }
+lwjgl-glfw = { module = "org.lwjgl:lwjgl-glfw" }
 
 # Build tools
 cctJavadoc = { module = "cc.tweaked:cct-javadoc", version.ref = "cctJavadoc" }
@@ -135,6 +142,7 @@ errorProne-plugin = { module = "net.ltgt.gradle:gradle-errorprone-plugin", versi
 errorProne-testHelpers = { module = "com.google.errorprone:error_prone_test_helpers", version.ref = "errorProne-core" }
 fabric-loom = { module = "net.fabricmc:fabric-loom", version.ref = "fabric-loom" }
 forgeGradle = { module = "net.minecraftforge.gradle:ForgeGradle", version.ref = "forgeGradle" }
+ideaExt = { module = "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext", version.ref = "ideaExt" }
 kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 librarian = { module = "org.parchmentmc:librarian", version.ref = "librarian" }
 minotaur = { module = "com.modrinth.minotaur:Minotaur", version.ref = "minotaur" }
@@ -154,7 +162,6 @@ vineflower = { module = "io.github.juuxel:loom-vineflower", version.ref = "vinef
 [plugins]
 forgeGradle = { id = "net.minecraftforge.gradle", version.ref = "forgeGradle" }
 githubRelease = { id = "com.github.breadmoirai.github-release", version.ref = "githubRelease" }
-ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "ideaExt" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 librarian = { id = "org.parchmentmc.librarian.forgegradle", version.ref = "librarian" }
 mixinGradle = { id = "org.spongepowered.mixin", version.ref = "mixinGradle" }

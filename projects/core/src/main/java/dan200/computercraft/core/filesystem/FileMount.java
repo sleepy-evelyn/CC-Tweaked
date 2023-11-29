@@ -12,18 +12,17 @@ import dan200.computercraft.api.filesystem.Mount;
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+
+import static dan200.computercraft.api.filesystem.MountConstants.*;
 
 /**
  * A {@link Mount} implementation which provides read-only access to a directory.
  */
 public class FileMount implements Mount {
-    private static final Set<OpenOption> READ_OPTIONS = Collections.singleton(StandardOpenOption.READ);
-
     protected final Path root;
 
     public FileMount(Path root) {
@@ -85,7 +84,9 @@ public class FileMount implements Mount {
     @Override
     public SeekableByteChannel openForRead(String path) throws FileOperationException {
         var file = resolvePath(path);
-        if (!Files.isRegularFile(file)) throw new FileOperationException(path, "No such file");
+        if (!Files.isRegularFile(file)) {
+            throw new FileOperationException(path, Files.exists(file) ? NOT_A_FILE : NO_SUCH_FILE);
+        }
 
         try {
             return Files.newByteChannel(file, READ_OPTIONS);
@@ -104,7 +105,7 @@ public class FileMount implements Mount {
     protected FileOperationException remapException(String fallbackPath, IOException exn) {
         return exn instanceof FileSystemException fsExn
             ? remapException(fallbackPath, fsExn)
-            : new FileOperationException(fallbackPath, exn.getMessage() == null ? "Access denied" : exn.getMessage());
+            : new FileOperationException(fallbackPath, exn.getMessage() == null ? ACCESS_DENIED : exn.getMessage());
     }
 
     /**
@@ -116,7 +117,7 @@ public class FileMount implements Mount {
      * @return The wrapped exception.
      */
     protected FileOperationException remapException(String fallbackPath, FileSystemException exn) {
-        var reason = getReason(exn);
+        var reason = MountHelpers.getReason(exn);
 
         var failedFile = exn.getFile();
         if (failedFile == null) return new FileOperationException(fallbackPath, reason);
@@ -125,21 +126,5 @@ public class FileMount implements Mount {
         return failedPath.startsWith(root)
             ? new FileOperationException(Joiner.on('/').join(root.relativize(failedPath)), reason)
             : new FileOperationException(fallbackPath, reason);
-    }
-
-    /**
-     * Get the user-friendly reason for a {@link FileSystemException}.
-     *
-     * @param exn The exception that occurred.
-     * @return The friendly reason for this exception.
-     */
-    protected String getReason(FileSystemException exn) {
-        if (exn instanceof FileAlreadyExistsException) return "File exists";
-        if (exn instanceof NoSuchFileException) return "No such file";
-        if (exn instanceof NotDirectoryException) return "Not a directory";
-        if (exn instanceof AccessDeniedException) return "Access denied";
-
-        var reason = exn.getReason();
-        return reason != null ? reason.trim() : "Operation failed";
     }
 }

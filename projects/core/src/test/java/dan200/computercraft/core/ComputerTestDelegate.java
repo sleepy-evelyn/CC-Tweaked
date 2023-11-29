@@ -5,6 +5,7 @@
 package dan200.computercraft.core;
 
 import com.google.common.base.Splitter;
+import dan200.computercraft.api.filesystem.MountConstants;
 import dan200.computercraft.api.filesystem.WritableMount;
 import dan200.computercraft.api.lua.ILuaAPI;
 import dan200.computercraft.api.lua.LuaException;
@@ -105,7 +106,7 @@ public class ComputerTestDelegate {
         for (var child : children) mount.delete(child);
 
         // And add our startup file
-        try (var channel = mount.openForWrite("startup.lua");
+        try (var channel = mount.openFile("startup.lua", MountConstants.WRITE_OPTIONS);
              var writer = Channels.newWriter(channel, StandardCharsets.UTF_8.newEncoder(), -1)) {
             writer.write("loadfile('test-rom/mcfly.lua', nil, _ENV)('test-rom/spec') cct_test.finish()");
         }
@@ -195,7 +196,7 @@ public class ComputerTestDelegate {
         DynamicNodeBuilder(String name, String path, Executable executor) {
             this.name = name;
             this.uri = getUri(path);
-            this.children = Collections.emptyMap();
+            this.children = Map.of();
             this.executor = executor;
         }
 
@@ -295,7 +296,7 @@ public class ComputerTestDelegate {
 
         @LuaFunction
         public final Collection<String> getNamesRemote() {
-            return Collections.singleton("remote_1");
+            return List.of("remote_1");
         }
 
         @LuaFunction
@@ -315,7 +316,7 @@ public class ComputerTestDelegate {
 
         @LuaFunction
         public final Object[] getMethodsRemote(String name) {
-            return name.equals("remote_1") ? new Object[]{ Collections.singletonList("func") } : null;
+            return name.equals("remote_1") ? new Object[]{ List.of("func") } : null;
         }
     }
 
