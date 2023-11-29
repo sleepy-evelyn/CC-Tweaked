@@ -84,8 +84,8 @@ dependencies {
 
     annotationProcessorEverywhere(libs.autoService)
 
-    testModImplementation(testFixtures(project(":core")))
-    testModImplementation(testFixtures(project(":fabric")))
+    //testModImplementation(testFixtures(project(":core")))
+    //testModImplementation(testFixtures(project(":fabric")))
 
     testImplementation(libs.bundles.test)
     testRuntimeOnly(libs.bundles.testRuntime)
@@ -110,7 +110,7 @@ loom {
             dependency(dependencies.project(":core").apply { isTransitive = false })
         }
 
-        register("cctest") {
+       register("cctest") {
             sourceSet(sourceSets.testMod.get())
             sourceSet(project(":common").sourceSets.testMod.get())
         }

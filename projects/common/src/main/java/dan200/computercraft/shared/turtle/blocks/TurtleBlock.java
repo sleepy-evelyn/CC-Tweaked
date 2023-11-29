@@ -54,7 +54,7 @@ public class TurtleBlock extends AbstractComputerBlock<TurtleBlockEntity> implem
 
     private static final VoxelShape DEFAULT_SHAPE = Shapes.box(
         0.125, 0.125, 0.125,
-        0.875, 0.875, 0.875
+        0.875, 0.875, 0.8125
     );
 
     private final BlockEntityTicker<TurtleBlockEntity> clientTicker = (level, pos, state, computer) -> computer.clientTick();
